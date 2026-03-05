@@ -1,0 +1,11 @@
+O Feder_OPO é a ferramenta definitiva para quem precisa de fotos para documentos de forma rápida, profissional e segura. Ideal para fotos de Identidade (RG), CNH, Passaporte e Crachás.
+
+**Principais Recursos:**
+- **Remoção de Fundo Inteligente:** Nossa tecnologia de IA identifica a pessoa e substitui o fundo original por um fundo branco padrão oficial automaticamente.
+- **Guia de Enquadramento:** Overlay de silhueta para garantir que sua cabeça e ombros fiquem na posição correta.
+- **Grade de Impressão A4:** Gere uma folha A4 pronta para impressão, economizando tempo e papel.
+- **Qualidade Profissional:** Fotos redimensionadas para o tamanho exato de 30x40mm com alta resolução (300 DPI).
+- **Privacidade Total:** Todo o processamento de imagem é feito localmente no seu celular. Não enviamos suas fotos para servidores externos.
+- **Código Aberto:** O app é gratuito e de código aberto, garantindo total transparência.
+
+Desenvolvido para facilitar a vida do cidadão e de instituições que precisam de fotos rápidas com qualidade garantida.
