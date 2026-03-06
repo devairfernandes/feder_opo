@@ -111,8 +111,10 @@ class TakePictureScreenState extends State<TakePictureScreen> {
         debugPrint('>>> Versão no GitHub: $latestVersion');
 
         if (latestVersion != currentVersion && mounted) {
+          final changelog =
+              data['changelog'] ?? 'Melhorias de estabilidade e performance.';
           debugPrint('>>> Mostrando diálogo de atualização!');
-          _showUpdateDialog(latestVersion, apkUrl);
+          _showUpdateDialog(latestVersion, apkUrl, changelog);
         } else {
           debugPrint('>>> App já está atualizado ou não está montado.');
         }
@@ -122,14 +124,25 @@ class TakePictureScreenState extends State<TakePictureScreen> {
     }
   }
 
-  void _showUpdateDialog(String version, String url) {
+  void _showUpdateDialog(String version, String url, String notes) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Nova Versão Disponível!'),
-        content: Text(
-          'Uma nova versão ($version) está disponível. Deseja atualizar agora?',
+        title: Text('Nova Versão Disponível ($version)'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'O que há de novo:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(notes),
+            const SizedBox(height: 16),
+            const Text('Deseja atualizar agora?'),
+          ],
         ),
         actions: [
           TextButton(
@@ -171,8 +184,14 @@ class TakePictureScreenState extends State<TakePictureScreen> {
         ),
       );
 
-      final dir = await getTemporaryDirectory();
-      final savePath = '${dir.path}/update.apk';
+      final dir = await getExternalStorageDirectory();
+      if (dir == null)
+        throw Exception('Não foi possível acessar Armazenamento Externo');
+      final savePath = '${dir.path}/app_download.apk';
+
+      // Remove arquivo antigo se existir
+      final file = File(savePath);
+      if (await file.exists()) await file.delete();
 
       final dio = Dio();
       await dio.download(
