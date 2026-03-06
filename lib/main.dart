@@ -12,6 +12,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:open_filex/open_filex.dart';
 
 class PhotoModel {
   final String name;
@@ -149,19 +150,23 @@ class TakePictureScreenState extends State<TakePictureScreen> {
 
   void _executeUpdate(String url) async {
     try {
-      // Mostra progress dialog
+      // Mostra progress dialog com porcentagem usando ValueNotifier
+      final progressNotifier = ValueNotifier<double>(0);
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (ctx) => const AlertDialog(
-          title: Text('Baixando atualização...'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 12),
-              Text('Aguarde o download...'),
-            ],
+        builder: (ctx) => AlertDialog(
+          title: const Text('Baixando atualização...'),
+          content: ValueListenableBuilder<double>(
+            valueListenable: progressNotifier,
+            builder: (ctx, prog, child) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                LinearProgressIndicator(value: prog),
+                const SizedBox(height: 12),
+                Text('${(prog * 100).toStringAsFixed(0)}%'),
+              ],
+            ),
           ),
         ),
       );
@@ -174,27 +179,25 @@ class TakePictureScreenState extends State<TakePictureScreen> {
         url,
         savePath,
         onReceiveProgress: (received, total) {
+          if (total > 0) {
+            progressNotifier.value = received / total;
+          }
           debugPrint('Download: $received / $total');
         },
       );
 
       if (mounted) Navigator.of(context).pop(); // fecha o dialog
 
-      // Abre o instalador via Android Intent
-      final result = await Process.run('am', [
-        'start',
-        '-a',
-        'android.intent.action.VIEW',
-        '-t',
-        'application/vnd.android.package-archive',
-        '-d',
-        'file://$savePath',
-        '--grant-read-uri-permission',
-      ]);
-      debugPrint('Install result: ${result.stdout}');
+      // Abre o instalador corretamente via FileProvider
+      debugPrint('>>> Abrindo instalador: $savePath');
+      final result = await OpenFilex.open(
+        savePath,
+        type: 'application/vnd.android.package-archive',
+      );
+      debugPrint('>>> Resultado: ${result.type} - ${result.message}');
     } catch (e) {
       if (mounted) Navigator.of(context).pop();
-      debugPrint('Erro ao atualizar: $e');
+      debugPrint('>>> Erro ao atualizar: $e');
     }
   }
 
