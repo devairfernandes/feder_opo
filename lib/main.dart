@@ -83,13 +83,18 @@ class TakePictureScreenState extends State<TakePictureScreen> {
   void initState() {
     super.initState();
     _initCamera(_selectedCameraIdx);
-    _checkUpdate();
+    // Aguarda o frame ser desenhado antes de checar atualização
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(seconds: 2), _checkUpdate);
+    });
   }
 
   Future<void> _checkUpdate() async {
     try {
+      debugPrint('>>> Checando atualização...');
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
+      debugPrint('>>> Versão atual do app: $currentVersion');
 
       final response = await http.get(
         Uri.parse(
@@ -97,17 +102,22 @@ class TakePictureScreenState extends State<TakePictureScreen> {
         ),
       );
 
+      debugPrint('>>> Status HTTP: \${response.statusCode}');
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final latestVersion = data['version'];
-        final apkUrl = data['url'];
+        final latestVersion = data['version'] as String;
+        final apkUrl = data['url'] as String;
+        debugPrint('>>> Versão no GitHub: $latestVersion');
 
-        if (latestVersion != currentVersion) {
+        if (latestVersion != currentVersion && mounted) {
+          debugPrint('>>> Mostrando diálogo de atualização!');
           _showUpdateDialog(latestVersion, apkUrl);
+        } else {
+          debugPrint('>>> App já está atualizado ou não está montado.');
         }
       }
     } catch (e) {
-      debugPrint('Erro ao verificar atualização: $e');
+      debugPrint('>>> Erro ao verificar atualização: $e');
     }
   }
 
