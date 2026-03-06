@@ -97,9 +97,10 @@ class TakePictureScreenState extends State<TakePictureScreen> {
       final currentVersion = packageInfo.version;
       debugPrint('>>> Versão atual do app: $currentVersion');
 
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
       final response = await http.get(
         Uri.parse(
-          'https://raw.githubusercontent.com/devairfernandes/feder_opo/main/version.json',
+          'https://raw.githubusercontent.com/devairfernandes/feder_opo/main/version.json?t=$timestamp',
         ),
       );
 
