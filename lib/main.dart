@@ -8,6 +8,10 @@ import 'package:image/image.dart' as img;
 import 'package:path/path.dart' show join;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:ota_update/ota_update.dart';
 
 class PhotoModel {
   final String name;
@@ -79,6 +83,70 @@ class TakePictureScreenState extends State<TakePictureScreen> {
   void initState() {
     super.initState();
     _initCamera(_selectedCameraIdx);
+    _checkUpdate();
+  }
+
+  Future<void> _checkUpdate() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final currentVersion = packageInfo.version;
+
+      final response = await http.get(
+        Uri.parse(
+          'https://raw.githubusercontent.com/devairfernandes/feder_opo/main/version.json',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final latestVersion = data['version'];
+        final apkUrl = data['url'];
+
+        if (latestVersion != currentVersion) {
+          _showUpdateDialog(latestVersion, apkUrl);
+        }
+      }
+    } catch (e) {
+      debugPrint('Erro ao verificar atualização: $e');
+    }
+  }
+
+  void _showUpdateDialog(String version, String url) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Nova Versão Disponível!'),
+        content: Text(
+          'Uma nova versão ($version) está disponível. Deseja atualizar agora?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('MAIS TARDE'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _executeUpdate(url);
+            },
+            child: const Text('ATUALIZAR AGORA'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _executeUpdate(String url) {
+    try {
+      OtaUpdate().execute(url, destinationFilename: 'foto3x4.apk').listen((
+        OtaEvent event,
+      ) {
+        debugPrint('Status da atualização: ${event.status}');
+      });
+    } catch (e) {
+      debugPrint('Erro na instalação: $e');
+    }
   }
 
   Future<void> _initCamera(int idx) async {
