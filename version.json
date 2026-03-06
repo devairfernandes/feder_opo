@@ -1,5 +1,5 @@
 {
-    "version": "1.1.0",
+    "version": "1.2.0",
     "url": "https://github.com/devairfernandes/feder_opo/raw/main/app-release.apk",
-    "changelog": "- Adicionada verificação automática de novas versões\n- Novo sistema de download com barra de progresso\n- Melhorias na estabilidade do instalador\n- Correção de bugs no salvamento de fotos"
+    "changelog": "- Otimização de segurança contra alertas do Play Protect\n- Redução no tamanho do aplicativo\n- Melhoria na performance do processamento de imagens\n- Correções de interface no modo 3x4"
 }
