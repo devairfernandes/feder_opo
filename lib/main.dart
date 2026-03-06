@@ -11,7 +11,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:ota_update/ota_update.dart';
+import 'package:dio/dio.dart';
 
 class PhotoModel {
   final String name;
@@ -137,15 +137,54 @@ class TakePictureScreenState extends State<TakePictureScreen> {
     );
   }
 
-  void _executeUpdate(String url) {
+  void _executeUpdate(String url) async {
     try {
-      OtaUpdate().execute(url, destinationFilename: 'foto3x4.apk').listen((
-        OtaEvent event,
-      ) {
-        debugPrint('Status da atualização: ${event.status}');
-      });
+      // Mostra progress dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => const AlertDialog(
+          title: Text('Baixando atualização...'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 12),
+              Text('Aguarde o download...'),
+            ],
+          ),
+        ),
+      );
+
+      final dir = await getTemporaryDirectory();
+      final savePath = '${dir.path}/update.apk';
+
+      final dio = Dio();
+      await dio.download(
+        url,
+        savePath,
+        onReceiveProgress: (received, total) {
+          debugPrint('Download: $received / $total');
+        },
+      );
+
+      if (mounted) Navigator.of(context).pop(); // fecha o dialog
+
+      // Abre o instalador via Android Intent
+      final result = await Process.run('am', [
+        'start',
+        '-a',
+        'android.intent.action.VIEW',
+        '-t',
+        'application/vnd.android.package-archive',
+        '-d',
+        'file://$savePath',
+        '--grant-read-uri-permission',
+      ]);
+      debugPrint('Install result: ${result.stdout}');
     } catch (e) {
-      debugPrint('Erro na instalação: $e');
+      if (mounted) Navigator.of(context).pop();
+      debugPrint('Erro ao atualizar: $e');
     }
   }
 
