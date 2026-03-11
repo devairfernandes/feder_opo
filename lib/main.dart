@@ -78,7 +78,7 @@ class TakePictureScreenState extends State<TakePictureScreen> {
   int _timerSecs = 0;
   int _countdown = 0;
   Timer? _timer;
-  PhotoModel _currentModel = officialModels[0];
+  final PhotoModel _currentModel = officialModels[0];
 
   @override
   void initState() {
@@ -186,8 +186,9 @@ class TakePictureScreenState extends State<TakePictureScreen> {
       );
 
       final dir = await getExternalStorageDirectory();
-      if (dir == null)
+      if (dir == null) {
         throw Exception('Não foi possível acessar Armazenamento Externo');
+      }
       final savePath = '${dir.path}/app_download.apk';
 
       // Remove arquivo antigo se existir
@@ -287,8 +288,9 @@ class TakePictureScreenState extends State<TakePictureScreen> {
           FutureBuilder<void>(
             future: _initializeControllerFuture,
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.done)
+              if (snapshot.connectionState == ConnectionState.done) {
                 return Center(child: CameraPreview(_controller));
+              }
               return const Center(child: CircularProgressIndicator());
             },
           ),

@@ -1,5 +1,5 @@
 {
-    "version": "1.2.0",
-    "url": "https://github.com/devairfernandes/feder_opo/raw/main/app-release.apk",
-    "changelog": "- Otimização de segurança contra alertas do Play Protect\n- Redução no tamanho do aplicativo\n- Melhoria na performance do processamento de imagens\n- Correções de interface no modo 3x4"
+    "version": "1.2.1",
+    "url": "https://github.com/devairfernandes/feder_opo/raw/main/app-arm64-v8a-release.apk",
+    "changelog": "- Otimização de tamanho drástica (build ARM64 otimizado)\n- Melhoria na performance do processamento de imagens\n- Correções de interface no modo 3x4"
 }
