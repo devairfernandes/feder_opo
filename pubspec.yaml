@@ -46,6 +46,7 @@ dependencies:
   http: ^1.2.0
   dio: ^5.4.0
   open_filex: ^4.3.4
+  google_fonts: ^6.2.1
 
 
 

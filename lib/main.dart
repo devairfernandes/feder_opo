@@ -9,6 +9,7 @@ import 'package:path/path.dart' show join;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:dio/dio.dart';
@@ -47,13 +48,15 @@ Future<void> main() async {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
-        primaryColor: Colors.deepPurple,
+        primaryColor: const Color(0xFF6366F1),
         useMaterial3: true,
-        scaffoldBackgroundColor: Colors.black,
+        scaffoldBackgroundColor: const Color(0xFF0F172A),
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
+          seedColor: const Color(0xFF6366F1),
           brightness: Brightness.dark,
+          surface: const Color(0xFF1E293B),
         ),
+        textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
       ),
       home: cameras.isEmpty
           ? const Scaffold(body: Center(child: Text('Câmera não encontrada')))
@@ -84,7 +87,6 @@ class TakePictureScreenState extends State<TakePictureScreen> {
   void initState() {
     super.initState();
     _initCamera(_selectedCameraIdx);
-    // Aguarda o frame ser desenhado antes de checar atualização
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(seconds: 2), _checkUpdate);
     });
@@ -92,10 +94,8 @@ class TakePictureScreenState extends State<TakePictureScreen> {
 
   Future<void> _checkUpdate() async {
     try {
-      debugPrint('>>> Checando atualização...');
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
-      debugPrint('>>> Versão atual do app: $currentVersion');
 
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final response = await http.get(
@@ -104,24 +104,19 @@ class TakePictureScreenState extends State<TakePictureScreen> {
         ),
       );
 
-      debugPrint('>>> Status HTTP: \${response.statusCode}');
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final latestVersion = data['version'] as String;
         final apkUrl = data['url'] as String;
-        debugPrint('>>> Versão no GitHub: $latestVersion');
 
         if (latestVersion != currentVersion && mounted) {
           final changelog =
               data['changelog'] ?? 'Melhorias de estabilidade e performance.';
-          debugPrint('>>> Mostrando diálogo de atualização!');
           _showUpdateDialog(latestVersion, apkUrl, changelog);
-        } else {
-          debugPrint('>>> App já está atualizado ou não está montado.');
         }
       }
     } catch (e) {
-      debugPrint('>>> Erro ao verificar atualização: $e');
+      debugPrint('Erro ao verificar atualização: $e');
     }
   }
 
@@ -130,32 +125,66 @@ class TakePictureScreenState extends State<TakePictureScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: Text('Nova Versão Disponível ($version)'),
+        backgroundColor: const Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text(
+          'Nova Versão Disponível ($version)',
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'O que há de novo:',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF6366F1),
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(notes),
-            const SizedBox(height: 16),
-            const Text('Deseja atualizar agora?'),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black26,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                notes,
+                style: GoogleFonts.outfit(fontSize: 14, color: Colors.white70),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Deseja atualizar agora?',
+              style: GoogleFonts.outfit(fontSize: 15),
+            ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('MAIS TARDE'),
+            child: Text(
+              'MAIS TARDE',
+              style: GoogleFonts.outfit(color: Colors.white38),
+            ),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6366F1),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
             onPressed: () {
               Navigator.pop(context);
               _executeUpdate(url);
             },
-            child: const Text('ATUALIZAR AGORA'),
+            child: Text(
+              'ATUALIZAR AGORA',
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -164,21 +193,43 @@ class TakePictureScreenState extends State<TakePictureScreen> {
 
   void _executeUpdate(String url) async {
     try {
-      // Mostra progress dialog com porcentagem usando ValueNotifier
       final progressNotifier = ValueNotifier<double>(0);
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
-          title: const Text('Baixando atualização...'),
+          backgroundColor: const Color(0xFF1E293B),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          title: Text(
+            'Baixando atualização...',
+            style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+          ),
           content: ValueListenableBuilder<double>(
             valueListenable: progressNotifier,
             builder: (ctx, prog, child) => Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                LinearProgressIndicator(value: prog),
-                const SizedBox(height: 12),
-                Text('${(prog * 100).toStringAsFixed(0)}%'),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: LinearProgressIndicator(
+                    value: prog,
+                    minHeight: 10,
+                    backgroundColor: Colors.black26,
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      Color(0xFF6366F1),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  '${(prog * 100).toStringAsFixed(0)}%',
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
               ],
             ),
           ),
@@ -186,12 +237,9 @@ class TakePictureScreenState extends State<TakePictureScreen> {
       );
 
       final dir = await getExternalStorageDirectory();
-      if (dir == null) {
-        throw Exception('Não foi possível acessar Armazenamento Externo');
-      }
+      if (dir == null) throw Exception('Erro de armazenamento interno');
       final savePath = '${dir.path}/app_download.apk';
 
-      // Remove arquivo antigo se existir
       final file = File(savePath);
       if (await file.exists()) await file.delete();
 
@@ -200,25 +248,18 @@ class TakePictureScreenState extends State<TakePictureScreen> {
         url,
         savePath,
         onReceiveProgress: (received, total) {
-          if (total > 0) {
-            progressNotifier.value = received / total;
-          }
-          debugPrint('Download: $received / $total');
+          if (total > 0) progressNotifier.value = received / total;
         },
       );
 
-      if (mounted) Navigator.of(context).pop(); // fecha o dialog
+      if (mounted) Navigator.of(context).pop();
 
-      // Abre o instalador corretamente via FileProvider
-      debugPrint('>>> Abrindo instalador: $savePath');
-      final result = await OpenFilex.open(
+      await OpenFilex.open(
         savePath,
         type: 'application/vnd.android.package-archive',
       );
-      debugPrint('>>> Resultado: ${result.type} - ${result.message}');
     } catch (e) {
       if (mounted) Navigator.of(context).pop();
-      debugPrint('>>> Erro ao atualizar: $e');
     }
   }
 
@@ -273,7 +314,11 @@ class TakePictureScreenState extends State<TakePictureScreen> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Erro: $e'),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -289,9 +334,13 @@ class TakePictureScreenState extends State<TakePictureScreen> {
             future: _initializeControllerFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.done) {
-                return Center(child: CameraPreview(_controller));
+                return Center(
+                  child: ClipRRect(child: CameraPreview(_controller)),
+                );
               }
-              return const Center(child: CircularProgressIndicator());
+              return const Center(
+                child: CircularProgressIndicator(color: Color(0xFF6366F1)),
+              );
             },
           ),
           Positioned.fill(
@@ -305,21 +354,34 @@ class TakePictureScreenState extends State<TakePictureScreen> {
               ),
             ),
           ),
+          // Gradient superior
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 120,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.black54, Colors.transparent],
+                ),
+              ),
+            ),
+          ),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  IconButton(
-                    icon: Icon(
-                      _flashMode == FlashMode.off
-                          ? Icons.flash_off
-                          : _flashMode == FlashMode.always
-                          ? Icons.flash_on
-                          : Icons.flash_auto,
-                      color: Colors.white,
-                    ),
+                  _glassIconButton(
+                    icon: _flashMode == FlashMode.off
+                        ? Icons.flash_off
+                        : _flashMode == FlashMode.always
+                        ? Icons.flash_on
+                        : Icons.flash_auto,
                     onPressed: () async {
                       final modes = [
                         FlashMode.off,
@@ -332,11 +394,9 @@ class TakePictureScreenState extends State<TakePictureScreen> {
                       setState(() {});
                     },
                   ),
-                  IconButton(
-                    icon: Icon(
-                      _timerSecs == 0 ? Icons.timer_off : Icons.timer,
-                      color: _timerSecs > 0 ? Colors.orange : Colors.white,
-                    ),
+                  _glassIconButton(
+                    icon: _timerSecs == 0 ? Icons.timer_off : Icons.timer,
+                    color: _timerSecs > 0 ? const Color(0xFF6366F1) : null,
                     onPressed: () => setState(
                       () => _timerSecs = (_timerSecs == 0
                           ? 3
@@ -344,11 +404,8 @@ class TakePictureScreenState extends State<TakePictureScreen> {
                     ),
                   ),
                   if (widget.cameras.length > 1)
-                    IconButton(
-                      icon: const Icon(
-                        Icons.flip_camera_android,
-                        color: Colors.white,
-                      ),
+                    _glassIconButton(
+                      icon: Icons.flip_camera_android_rounded,
                       onPressed: () {
                         setState(
                           () => _selectedCameraIdx =
@@ -366,11 +423,17 @@ class TakePictureScreenState extends State<TakePictureScreen> {
             Center(
               child: Text(
                 '$_countdown',
-                style: const TextStyle(
-                  fontSize: 120,
-                  fontWeight: FontWeight.bold,
+                style: GoogleFonts.outfit(
+                  fontSize: 140,
+                  fontWeight: FontWeight.w900,
                   color: Colors.white,
-                  shadows: [Shadow(blurRadius: 10, color: Colors.black)],
+                  shadows: [
+                    const Shadow(
+                      blurRadius: 30,
+                      color: Colors.black,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -380,44 +443,82 @@ class TakePictureScreenState extends State<TakePictureScreen> {
             right: 0,
             child: SafeArea(
               child: Container(
-                padding: const EdgeInsets.only(bottom: 60, top: 10),
-                decoration: const BoxDecoration(
+                padding: const EdgeInsets.only(bottom: 40, top: 40),
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black],
+                    colors: [
+                      Colors.transparent,
+                      const Color(0xFF0F172A).withOpacity(0.9),
+                    ],
                   ),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'MODO 3X4 ATIVO',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6366F1).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: const Color(0xFF6366F1).withOpacity(0.3),
+                        ),
+                      ),
+                      child: Text(
+                        'MODO 3X4 ATIVO',
+                        style: GoogleFonts.outfit(
+                          color: const Color(0xFF6366F1),
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    GestureDetector(
+                      onTap: (_isProcessing || _countdown > 0)
+                          ? null
+                          : _startCapture,
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 4),
+                        ),
+                        child: Container(
+                          height: 75,
+                          width: 75,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                          ),
+                          child: Icon(
+                            Icons.camera_alt_rounded,
+                            color: const Color(0xFF0F172A),
+                            size: 36,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 25),
-                    FloatingActionButton.large(
-                      onPressed: (_isProcessing || _countdown > 0)
-                          ? null
-                          : _startCapture,
-                      backgroundColor: Colors.white,
-                      child: const Icon(
-                        Icons.camera_alt,
-                        color: Colors.black,
-                        size: 40,
+                    Text(
+                      'Desenvolvido por: Devair Fernandes',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white38,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(height: 15),
-                    const Text(
-                      'Desenvolvido por: Devair fernandes (69)99221-4709',
-                      style: TextStyle(
-                        color: Colors.white38,
+                    Text(
+                      '(69) 99221-4709',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white24,
                         fontSize: 10,
-                        fontWeight: FontWeight.w300,
                       ),
                     ),
                   ],
@@ -427,10 +528,43 @@ class TakePictureScreenState extends State<TakePictureScreen> {
           ),
           if (_isProcessing)
             Container(
-              color: Colors.black87,
-              child: const Center(child: CircularProgressIndicator()),
+              color: Colors.black.withOpacity(0.7),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(color: Color(0xFF6366F1)),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Processando...',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _glassIconButton({
+    required IconData icon,
+    VoidCallback? onPressed,
+    Color? color,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white10,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: IconButton(
+        icon: Icon(icon, color: color ?? Colors.white, size: 22),
+        onPressed: onPressed,
       ),
     );
   }
@@ -502,37 +636,26 @@ class EditPhotoScreenState extends State<EditPhotoScreen> {
 
     try {
       img.Image source = _croppedBase!;
-
-      // CONFIGURAÇÃO FOLHA A4 (2480 x 3508 pixels @ 300 DPI)
       final sw = 2480, sh = 3508;
       final sheet = img.Image(width: sw, height: sh);
       img.fill(sheet, color: img.ColorRgb8(255, 255, 255));
 
-      // TAMANHO REAL 30x40mm @ 300 DPI:
-      // 30mm = 354 pixels
-      // 40mm = 472 pixels
       int tw = 354, th = 472;
       final res = img.copyResize(source, width: tw, height: th);
-
-      // Organização em colunas e linhas para A4
-      int cols =
-          4; // 4 fotos por linha cabem bem no A4 (4 * 3cm = 12cm + margens)
+      int cols = 4;
       int rows = (_quantity / cols).ceil();
-
-      // Margens para centralizar o bloco de fotos no topo do A4
       int hGap = 60, vGap = 60;
       int totalW = (cols * tw) + ((cols - 1) * hGap);
       int startX = (sw - totalW) ~/ 2;
-      int startY = 350; // Margem superior (ajustada para dar espaço ao texto)
+      int startY = 350;
 
-      // Adiciona o nome do desenvolvedor no topo da folha
       img.drawString(
         sheet,
-        'Desenvolvido por: Devair fernandes (69)99221-4709',
-        font: img.arial24,
-        x: sw ~/ 2 - 350,
-        y: 100,
-        color: img.ColorRgb8(150, 150, 150),
+        'Desenvolvido por: Devair Fernandes (69) 99221-4709',
+        font: img.arial48,
+        x: sw ~/ 2 - 700,
+        y: 150,
+        color: img.ColorRgb8(120, 120, 120),
       );
 
       int count = 0;
@@ -551,7 +674,6 @@ class EditPhotoScreenState extends State<EditPhotoScreen> {
       }
 
       _currentSheet = sheet;
-      // Gerar preview menor para tela
       img.Image previewSheet = img.copyResize(sheet, height: 800);
       setState(() {
         _sheetPreview = Uint8List.fromList(img.encodeJpg(previewSheet));
@@ -583,100 +705,139 @@ class EditPhotoScreenState extends State<EditPhotoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Folha A4 - Fotos 3x4')),
+      appBar: AppBar(
+        title: Text(
+          'Grade de Impressão A4',
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+      ),
       body: Column(
         children: [
           Expanded(
             child: Center(
               child: _isGeneratingSheet
-                  ? const Column(
+                  ? Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        CircularProgressIndicator(color: Colors.greenAccent),
-                        SizedBox(height: 10),
-                        Text('Redimensionando para A4...'),
+                        const CircularProgressIndicator(
+                          color: Color(0xFF6366F1),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Otimizando folha A4...',
+                          style: GoogleFonts.outfit(color: Colors.white70),
+                        ),
                       ],
                     )
                   : _sheetPreview == null
                   ? const CircularProgressIndicator()
                   : Padding(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(30),
                       child: Container(
                         decoration: BoxDecoration(
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.white.withOpacity(0.1),
-                              blurRadius: 15,
+                              color: const Color(0xFF6366F1).withOpacity(0.05),
+                              blurRadius: 40,
+                              spreadRadius: 10,
                             ),
                           ],
                         ),
-                        child: Image.memory(_sheetPreview!),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: Image.memory(_sheetPreview!),
+                        ),
                       ),
                     ),
             ),
           ),
-          SafeArea(
-            top: false,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(20, 15, 20, 40),
-              color: Colors.grey[900],
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E293B),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(32),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.4),
+                  blurRadius: 20,
+                  offset: const Offset(0, -5),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              top: false,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'FOLHA PAPEL A4 ATIVA',
-                    style: TextStyle(
-                      color: Colors.greenAccent,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6366F1).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.copy_rounded,
+                          color: Color(0xFF6366F1),
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'QUANTIDADE DE FOTOS',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
                   ),
-
-                  const Text(
-                    'ESCOLHA A QUANTIDADE:',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 20),
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
                     child: Row(
                       children: List.generate(12, (index) {
-                        // Aumentado para até 12 fotos no A4
                         int val = index + 1;
                         bool isSelected = _quantity == val;
                         return Padding(
-                          padding: const EdgeInsets.only(right: 10),
+                          padding: const EdgeInsets.only(right: 12),
                           child: InkWell(
                             onTap: () {
                               setState(() => _quantity = val);
                               _updateSheetPreview();
                             },
-                            child: Container(
-                              width: 45,
-                              height: 45,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: 50,
+                              height: 50,
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? Colors.greenAccent
-                                    : Colors.grey[800],
-                                borderRadius: BorderRadius.circular(8),
+                                    ? const Color(0xFF6366F1)
+                                    : Colors.white.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
                                   color: isSelected
                                       ? Colors.white
-                                      : Colors.white24,
+                                      : Colors.white10,
                                   width: 2,
                                 ),
                               ),
                               child: Center(
                                 child: Text(
                                   '$val',
-                                  style: TextStyle(
+                                  style: GoogleFonts.outfit(
                                     color: isSelected
-                                        ? Colors.black
-                                        : Colors.white,
+                                        ? Colors.white
+                                        : Colors.white54,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 18,
                                   ),
@@ -688,19 +849,33 @@ class EditPhotoScreenState extends State<EditPhotoScreen> {
                       }),
                     ),
                   ),
-                  const SizedBox(height: 25),
-                  ElevatedButton.icon(
+                  const SizedBox(height: 32),
+                  ElevatedButton(
                     onPressed: _sheetPreview == null ? null : _shareSheet,
-                    icon: const Icon(Icons.share_rounded),
-                    label: const Text('SALVAR E COMPARTILHAR A4'),
                     style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 70),
-                      backgroundColor: Colors.deepPurple,
+                      minimumSize: const Size(double.infinity, 64),
+                      backgroundColor: const Color(0xFF6366F1),
                       foregroundColor: Colors.white,
+                      elevation: 10,
+                      shadowColor: const Color(0xFF6366F1).withOpacity(0.5),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: BorderRadius.circular(18),
                       ),
-                      elevation: 8,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.share_rounded, size: 20),
+                        const SizedBox(width: 12),
+                        Text(
+                          'SALVAR E COMPARTILHAR',
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -717,34 +892,48 @@ class SilhouettePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final p = Paint()
-      ..color = Colors.white54
+      ..color = const Color(0xFF6366F1).withOpacity(0.4)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0;
-    canvas.drawRect(Offset.zero & size, p);
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round;
+
+    final dashPaint = Paint()
+      ..color = Colors.white24
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    // Retângulo guia
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(12)),
+      dashPaint,
+    );
+
+    // Cabeça
     canvas.drawOval(
       Rect.fromLTWH(
         size.width * 0.25,
         size.height * 0.15,
         size.width * 0.5,
-        size.height * 0.4,
+        size.height * 0.42,
       ),
       p,
     );
+    // Ombros
     canvas.drawPath(
       Path()
-        ..moveTo(size.width * 0.1, size.height * 0.85)
+        ..moveTo(size.width * 0.05, size.height * 0.9)
         ..quadraticBezierTo(
-          size.width * 0.1,
-          size.height * 0.65,
-          size.width * 0.3,
-          size.height * 0.65,
+          size.width * 0.05,
+          size.height * 0.68,
+          size.width * 0.25,
+          size.height * 0.68,
         )
-        ..lineTo(size.width * 0.7, size.height * 0.65)
+        ..lineTo(size.width * 0.75, size.height * 0.68)
         ..quadraticBezierTo(
-          size.width * 0.9,
-          size.height * 0.65,
-          size.width * 0.9,
-          size.height * 0.85,
+          size.width * 0.95,
+          size.height * 0.68,
+          size.width * 0.95,
+          size.height * 0.9,
         ),
       p,
     );
